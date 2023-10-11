@@ -79,9 +79,12 @@ debug.findlocal = function(name)
 	end
 end
 
-class = function(name, members)
-	_G[name] = members
+class = function(name)
 	classes[name] = _G[name]
+
+	return function(members)
+		_G[name] = members
+	end
 end
 
 f = function(str)
