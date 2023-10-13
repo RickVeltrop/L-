@@ -2,10 +2,18 @@ local ENV = os.getenv('environment')
 
 null = nil
 
-using = require
+local r = require
+using = function(...) r(...) end
 require = null
 
 using 'system';
+
+local ts = tostring
+tostring = function(value)
+	if not value then return "null" end
+
+	return ts(value)
+end
 
 local classes = {}
 
@@ -73,38 +81,54 @@ debug.findlocal = function(name)
 			nullcounter = nullcounter + 1
 		end
 
-		if nullcounter > 5 then
+		if nullcounter > 10 then
 			return null,null
 		end
 	end
 end
 
 class = function(name)
-	classes[name] = _G[name]
-
 	return function(members)
+		classes[name] = members
 		_G[name] = members
+
+		for i,v in pairs(members) do
+			_G[i] = v
+		end
 	end
 end
 
-f = function(str)
-	local returns = str
+local function ResolveInterpolation(VariableName)
+	VariableName = VariableName:gsub('{', '')
+	VariableName = VariableName:gsub('}', '')
 
-	for match in string.gmatch(str, '{.-}') do
-		match = match:gsub('{', '')
-		match = match:gsub('}', '')
+	if string.find(VariableName, '()', 0, -1) then
+		VariableName = VariableName:gsub('%(%)', '')
+		assert(_G[VariableName],
+			'Unable to find function '.. VariableName..'().'
+		)
 
-		local key,val = debug.findlocal(match)
+		return tostring(_G[VariableName]())
+	else
+		local key,val = debug.findlocal(VariableName)
+
 		if not key and not val then
-			key,val = findmember(match)
+			key,val = findmember(VariableName)
 		end
 
-		if key and val then
-			returns = returns:gsub("{"..match.."}", val)
-		end
+		val = val or "null"
+
+		return val
+	end
+end
+
+f = function(InterpolationString)
+	for Match in string.gmatch(InterpolationString, '{.-}') do
+		local Interpolation = ResolveInterpolation(Match)
+		InterpolationString = InterpolationString:gsub(Match, Interpolation)
 	end
 
-	return returns
+	return InterpolationString
 end
 
 local args = { 'main.lua', ENV }

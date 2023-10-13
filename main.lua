@@ -4,10 +4,13 @@ using "system.Threading";
 using "system.IO";
 
 class "Program" {
-	var = "variable";
+	Var = "variable";
+
+	Gay = function(str)
+		return f"This is a {Var}!"
+	end;
 
 	Main = function(args)
-		local str = f"This is a {var}!";
-		Console.WriteLine(str);
+		Console.WriteLine(Gay());
 	end;
 }
